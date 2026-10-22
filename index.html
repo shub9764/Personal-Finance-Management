@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Finance Management Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Mobile Sidebar Overlay -->
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">PF</div>
+      <div class="brand-text">
+        <b>Finance Portal</b>
+        <span>Smart Money Manager</span>
+      </div>
+    </div>
+
+    <!-- Main Navigation with Icons -->
+    <nav id="nav">
+      <!-- Populated dynamically via script.js -->
+    </nav>
+
+    <!-- Sidebar Bottom / User Profile -->
+    <div class="sidebar-bottom">
+      <button class="nav-item" data-page="settings" onclick="showPage('settings')">
+        <span class="nav-icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+
+      <div class="user-mini">
+        <div class="avatar" id="avatar">?</div>
+        <div>
+          <b id="sideName">Loading User...</b>
+          <span>Personal Account</span>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main View -->
+  <main class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+
+      <div style="display:flex; align-items:center;">
+        <button id="menuToggle" class="menu-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+        <div class="topbar-title-wrap">
+          <div class="eyebrow" id="eyebrow">OVERVIEW</div>
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+      </div>
+
+      <div class="top-actions">
+
+        <!-- Connection Status Indicator -->
+        <div id="connectionStatus" class="connection-status connected">
+          <span class="connection-status-dot"></span>
+          <span>Connecting...</span>
+        </div>
+
+        <!-- Account Holder Selector -->
+        <div class="user-holder">
+          <span>User:</span>
+          <select id="userSelector" class="user-selector" aria-label="Select User">
+            <option value="">Select User</option>
+          </select>
+          <button class="secondary btn-sm" onclick="openUserModal()">+ Add User</button>
+        </div>
+
+        <button class="icon-btn" onclick="focusSearch()" title="Search transactions">⌕</button>
+        <button class="icon-btn" onclick="showPage('bills')" title="Upcoming bills">🔔</button>
+
+        <div class="profile" id="profile">?</div>
+
+      </div>
+
+    </header>
+
+    <!-- Page Content Container -->
+    <div class="content-area">
+
+      <!-- ========================================================
+           1. DASHBOARD PAGE
+           ======================================================== -->
+      <section id="page-dashboard" class="page active">
+
+        <div class="welcome">
+          <div>
+            <h2 id="welcomeMessage">Welcome back</h2>
+            <p id="dashboardPeriod">Current Financial Period</p>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <label style="display:flex; align-items:center; gap:6px; margin:0; font-size:13px; font-weight:500;">
+              Period:
+              <input type="month" id="dashMonthPicker" class="user-selector" onchange="onDashboardMonthChange(this.value)">
+            </label>
+
+            <button class="primary" onclick="openTransactionModal()">+ Add Transaction</button>
+          </div>
+        </div>
+
+        <!-- 5 Stat Cards with Left-border Accents -->
+        <div class="stat-grid">
+          <div class="stat stat-balance">
+            <div class="stat-header">
+              <span>Total Balance</span>
+              <span class="stat-icon">🏦</span>
+            </div>
+            <strong id="dashBalance">₹0</strong>
+            <small>Across all active accounts</small>
+          </div>
+
+          <div class="stat stat-income">
+            <div class="stat-header">
+              <span>Monthly Income</span>
+              <span class="stat-icon">📈</span>
+            </div>
+            <strong id="dashIncome" class="positive">₹0</strong>
+            <small>Total inflows this period</small>
+          </div>
+
+          <div class="stat stat-expense">
+            <div class="stat-header">
+              <span>Monthly Expenses</span>
+              <span class="stat-icon">📉</span>
+            </div>
+            <strong id="dashExpenses" class="negative">₹0</strong>
+            <small>Total outflows this period</small>
+          </div>
+
+          <div class="stat stat-savings">
+            <div class="stat-header">
+              <span>Net Savings</span>
+              <span class="stat-icon">💰</span>
+            </div>
+            <strong id="dashSavings">₹0</strong>
+            <small>Income minus expenses</small>
+          </div>
+
+          <div class="stat stat-rate">
+            <div class="stat-header">
+              <span>Savings Rate</span>
+              <span class="stat-icon">🎯</span>
+            </div>
+            <strong id="dashSavingsRate">0%</strong>
+            <small>Of monthly income saved</small>
+          </div>
+        </div>
+
+        <!-- Charts: Cashflow Bar Chart & Spending Donut Chart -->
+        <div class="grid-2">
+
+          <!-- Cashflow Bar Chart -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Income vs Expenses</h3>
+                <span>Last 6 months cash flow overview</span>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-color legend-income"></span> Income</span>
+                <span class="legend-item"><span class="legend-color legend-expense"></span> Expenses</span>
+              </div>
+            </div>
+
+            <div class="chart-container">
+              <div class="bar-chart" id="incomeExpenseChart">
+                <div class="empty">Loading cash flow data...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Spending Donut Chart -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Spending by Category</h3>
+                <span>Expense distribution this period</span>
+              </div>
+            </div>
+
+            <div class="donut-wrap">
+              <div class="donut-box">
+                <svg class="donut-svg" viewBox="0 0 42 42" id="donutSvg">
+                  <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="var(--border-color)" stroke-width="6"></circle>
+                </svg>
+                <div class="donut-center">
+                  <strong id="categoryTotal">₹0</strong>
+                  <span>Total Spent</span>
+                </div>
+              </div>
+
+              <div class="category-list" id="dashboardCategories">
+                <div class="empty">No expenses recorded for this period.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Lower Dashboard: Recent Transactions & Budget Status -->
+        <div class="grid-2">
+
+          <!-- Recent Transactions Table -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Recent Transactions</h3>
+                <span>Latest money movements</span>
+              </div>
+              <button class="text-btn" onclick="showPage('transactions')">View All →</button>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardTransactions">
+                  <tr><td colspan="4" class="empty">No transactions yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Budget Progress Overview -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Monthly Budget Status</h3>
+                <span>Overall budget usage</span>
+              </div>
+              <button class="text-btn" onclick="showPage('budgets')">Manage Budgets →</button>
+            </div>
+
+            <div id="dashboardBudget">
+              <div class="empty">No active budgets found for this month.</div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           2. TRANSACTIONS PAGE
+           ======================================================== -->
+      <section id="page-transactions" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Transactions</h2>
+            <p class="muted">Search, filter, track and modify your financial activities.</p>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="secondary" onclick="openImportModal()">⬇ Import Statement</button>
+            <button class="primary" onclick="openTransactionModal()">+ Add Transaction</button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="filters-toolbar">
+          <div class="filters-row">
+            <div class="search-input-wrap">
+              <span class="search-icon">🔍</span>
+              <input id="searchTransactions" placeholder="Search description, account, category..." oninput="applyFilters()">
+            </div>
+
+            <select id="filterType" onchange="applyFilters()">
+              <option value="All">All Types</option>
+              <option value="Income">Income (+)</option>
+              <option value="Expense">Expense (−)</option>
+            </select>
+
+            <select id="filterCategory" onchange="applyFilters()">
+              <option value="All">All Categories</option>
+            </select>
+
+            <select id="filterPaymentMethod" onchange="applyFilters()">
+              <option value="All">All Payment Methods</option>
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Card">Card</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Net Banking">Net Banking</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Advanced Date & Amount Filters -->
+          <div class="filters-row">
+            <div class="filter-chip-group">
+              <span class="filter-label">From:</span>
+              <input type="date" id="filterStartDate" onchange="applyFilters()">
+            </div>
+
+            <div class="filter-chip-group">
+              <span class="filter-label">To:</span>
+              <input type="date" id="filterEndDate" onchange="applyFilters()">
+            </div>
+
+            <div class="filter-chip-group">
+              <span class="filter-label">Min ₹:</span>
+              <input type="number" id="filterMinAmount" placeholder="0" style="width:90px;" oninput="applyFilters()">
+            </div>
+
+            <div class="filter-chip-group">
+              <span class="filter-label">Max ₹:</span>
+              <input type="number" id="filterMaxAmount" placeholder="Max" style="width:90px;" oninput="applyFilters()">
+            </div>
+
+            <button class="secondary btn-sm" onclick="clearFilters()">Reset Filters</button>
+          </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Date</th>
+                  <th>Account</th>
+                  <th>Payment Method</th>
+                  <th>Amount</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="transactionRows">
+                <tr><td colspan="8" class="empty">Loading transactions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           3. ACCOUNTS PAGE
+           ======================================================== -->
+      <section id="page-accounts" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Accounts</h2>
+            <p class="muted">Manage your bank accounts, credit cards, UPI and cash reserves.</p>
+          </div>
+          <button class="primary" onclick="openAccountModal()">+ Add Account</button>
+        </div>
+
+        <div class="account-grid" id="accountsGrid">
+          <div class="empty">Loading accounts...</div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           4. BUDGETS PAGE
+           ======================================================== -->
+      <section id="page-budgets" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Category Budgets</h2>
+            <p class="muted">Set monthly limits to keep your expenses strictly in control.</p>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:500;">
+              Month:
+              <input type="month" id="budgetMonthFilter" class="user-selector" onchange="loadBudgets()">
+            </label>
+            <button class="primary" onclick="openBudgetModal()">+ Create Budget</button>
+          </div>
+        </div>
+
+        <!-- Budget Summary Stat Grid -->
+        <div class="stat-grid">
+          <div class="stat stat-balance">
+            <span>Total Budget</span>
+            <strong id="budgetTotal">₹0</strong>
+            <small id="budgetMonthLabel">Current Month</small>
+          </div>
+
+          <div class="stat stat-expense">
+            <span>Total Spent</span>
+            <strong id="budgetSpent" class="negative">₹0</strong>
+            <small id="budgetUsed">0% used</small>
+          </div>
+
+          <div class="stat stat-savings">
+            <span>Remaining Buffer</span>
+            <strong id="budgetRemaining">₹0</strong>
+            <small>Unspent allocation</small>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Category Spending Limits</h3>
+          </div>
+          <div id="budgetsList">
+            <div class="empty">No budgets created for this month.</div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           5. SAVINGS GOALS PAGE
+           ======================================================== -->
+      <section id="page-goals" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Savings Goals</h2>
+            <p class="muted">Set targets for vacations, emergency funds, gadgets and milestones.</p>
+          </div>
+          <button class="primary" onclick="openGoalModal()">+ Add Goal</button>
+        </div>
+
+        <div class="goal-grid" id="goalsGrid">
+          <div class="empty">Loading savings goals...</div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           6. BILLS & SUBSCRIPTIONS PAGE
+           ======================================================== -->
+      <section id="page-bills" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Bills & Subscriptions</h2>
+            <p class="muted">Track recurring subscriptions, utility bills and scheduled renewals.</p>
+          </div>
+          <button class="primary" onclick="openBillModal()">+ Add Recurring Payment</button>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat stat-balance">
+            <span>Monthly Recurring</span>
+            <strong id="billMonthly">₹0</strong>
+            <small id="billCount">0 active items</small>
+          </div>
+
+          <div class="stat stat-rate">
+            <span>Due Next 7 Days</span>
+            <strong id="billDue" class="warning">₹0</strong>
+            <small>Urgent payments</small>
+          </div>
+
+          <div class="stat stat-savings">
+            <span>Subscriptions Total</span>
+            <strong id="billSubscriptions">₹0</strong>
+            <small>Monthly recurring cost</small>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Scheduled Invoices & Subscriptions</h3>
+          </div>
+          <div class="bill-list" id="billsList">
+            <div class="empty">No recurring bills or subscriptions configured.</div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           7. INVESTMENTS PAGE
+           ======================================================== -->
+      <section id="page-investments" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Investments Portfolio</h2>
+            <p class="muted">Monitor stocks, mutual funds, gold, fixed deposits and real estate.</p>
+          </div>
+          <button class="primary" onclick="openInvestmentModal()">+ Add Investment</button>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat stat-balance">
+            <span>Total Invested</span>
+            <strong id="investedTotal">₹0</strong>
+            <small id="investmentCount">0 holdings</small>
+          </div>
+
+          <div class="stat stat-income">
+            <span>Current Valuation</span>
+            <strong id="investmentValue">₹0</strong>
+            <small id="investmentGain">₹0</small>
+          </div>
+
+          <div class="stat stat-rate">
+            <span>Total Return (ROI)</span>
+            <strong id="investmentReturn">0%</strong>
+            <small>Unrealized portfolio gain/loss</small>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Portfolio Holdings</h3>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Asset / Investment</th>
+                  <th>Category</th>
+                  <th>Invested</th>
+                  <th>Current Value</th>
+                  <th>Net Profit/Loss</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="investmentsList">
+                <tr><td colspan="6" class="empty">No investment assets recorded yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           8. NET WORTH PAGE
+           ======================================================== -->
+      <section id="page-networth" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Net Worth Calculation</h2>
+            <p class="muted">Total Assets minus Total Liabilities, computed live from your database.</p>
+          </div>
+
+          <div style="display:flex; gap:8px;">
+            <button class="secondary" onclick="openAssetModal()">+ Add Asset</button>
+            <button class="secondary" onclick="openLiabilityModal()">+ Add Liability</button>
+          </div>
+        </div>
+
+        <!-- Net Worth Banner -->
+        <div class="networth-hero">
+          <div>
+            <span>Estimated Net Worth</span>
+            <strong id="netWorth">₹0</strong>
+            <small>Real-time consolidated balance sheet</small>
+          </div>
+          <div style="text-align:right;">
+            <div>Assets: <b id="assetsSummary">₹0</b></div>
+            <div>Liabilities: <b id="liabilitiesSummary">₹0</b></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Assets Panel -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Assets Breakdown</h3>
+              <strong id="assetsTotal" class="positive">₹0</strong>
+            </div>
+
+            <div class="asset-line">
+              <span>Liquid Bank Balances</span>
+              <b id="nwBank">₹0</b>
+            </div>
+            <div class="asset-line">
+              <span>Investment Portfolio</span>
+              <b id="nwInvestments">₹0</b>
+            </div>
+            <div class="asset-line">
+              <span>Property & Other Assets</span>
+              <b id="nwOther">₹0</b>
+            </div>
+
+            <div id="assetsCustomList" style="margin-top:12px;"></div>
+          </div>
+
+          <!-- Liabilities Panel -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Liabilities & Debts</h3>
+              <strong id="liabilitiesTotal" class="negative">₹0</strong>
+            </div>
+
+            <div id="liabilitiesList">
+              <div class="empty">No liabilities recorded.</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           9. REPORTS & INSIGHTS PAGE
+           ======================================================== -->
+      <section id="page-reports" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Financial Reports & Insights</h2>
+            <p class="muted">Data-driven performance review and cash flow analysis.</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <!-- Monthly Cashflow History -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Monthly Cash Flow Performance</h3>
+            </div>
+            <div id="reportMonthly">
+              <div class="empty">Loading monthly metrics...</div>
+            </div>
+          </div>
+
+          <!-- Smart Insights -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Financial Intelligence Insights</h3>
+            </div>
+            <div class="insights-grid" id="insights">
+              <div class="empty">Generating insights...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Category Breakdown -->
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Year-to-Date Category Expense Breakdown</h3>
+          </div>
+          <div id="reportCategories">
+            <div class="empty">Loading category metrics...</div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           10. FINANCE ASSISTANT
+           ======================================================== -->
+      <section id="page-assistant" class="page">
+
+        <div class="assistant-wrap">
+
+          <div class="assistant-head">
+            <div class="assistant-mark">✦</div>
+            <div>
+              <h2>AI Finance Assistant</h2>
+              <p class="muted">Ask natural questions about your balances, spending, upcoming bills and budgets.</p>
+            </div>
+          </div>
+
+          <div class="chat">
+            <div class="chat-messages" id="chat">
+              <div class="msg bot">
+                👋 Hello! I am your personal finance assistant. Ask me questions like:
+                "Where did I spend the most?", "How much did I save?", "What bills are due?", or "What is my Net Worth?".
+              </div>
+            </div>
+
+            <!-- Suggested Quick Prompts -->
+            <div class="quick">
+              <button onclick="askAssistant('Where did I spend the most this month?')">Largest expense?</button>
+              <button onclick="askAssistant('How much did I save this month?')">Monthly savings?</button>
+              <button onclick="askAssistant('Show upcoming bills')">Upcoming bills?</button>
+              <button onclick="askAssistant('Explain my budget status')">Budget status?</button>
+              <button onclick="askAssistant('What is my net worth?')">Net worth?</button>
+            </div>
+
+            <div class="chat-input">
+              <input id="assistantInput" placeholder="Type a finance query and press Enter..." onkeydown="if(event.key==='Enter')askAssistant()">
+              <button class="primary" onclick="askAssistant()">Send</button>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ========================================================
+           11. SETTINGS PAGE
+           ======================================================== -->
+      <section id="page-settings" class="page">
+
+        <div class="page-tools">
+          <div>
+            <h2>Account Settings</h2>
+            <p class="muted">Manage your profile, preferred currency, and visual display theme.</p>
+          </div>
+        </div>
+
+        <div class="settings-container">
+
+          <div class="settings-section">
+            <h3>Profile Credentials</h3>
+            <p>Your primary account identifier for this finance portal.</p>
+
+            <div class="form-group">
+              <label for="settingName">Full Name</label>
+              <input id="settingName" placeholder="e.g. Alex Morgan">
+            </div>
+
+            <div class="form-group">
+              <label for="settingEmail">Email Address</label>
+              <input id="settingEmail" type="email" placeholder="e.g. alex@example.com">
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Localization & Currency</h3>
+            <p>Sets how financial amounts are formatted and rendered across all modules.</p>
+
+            <div class="form-group">
+              <label for="settingCurrency">Default Currency</label>
+              <select id="settingCurrency">
+                <option value="INR">Indian Rupee (₹ INR)</option>
+                <option value="USD">US Dollar ($ USD)</option>
+                <option value="EUR">Euro (€ EUR)</option>
+                <option value="GBP">British Pound (£ GBP)</option>
+                <option value="JPY">Japanese Yen (¥ JPY)</option>
+                <option value="CAD">Canadian Dollar ($ CAD)</option>
+                <option value="AUD">Australian Dollar ($ AUD)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="settingTheme">Interface Theme</label>
+              <select id="settingTheme">
+                <option value="Light">Light Mode</option>
+                <option value="Dark">Dark Mode</option>
+              </select>
+            </div>
+
+            <button class="primary" onclick="saveSettings()">Save Preferences</button>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+</div>
+
+<!-- ============================================================
+     GLOBAL MODAL CONTAINER
+     ============================================================ -->
+<div id="modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalTitle">Modal</h2>
+        <p id="modalSubtitle"></p>
+      </div>
+      <button class="close" onclick="closeModal()" aria-label="Close modal">×</button>
+    </div>
+
+    <div id="modalBody"></div>
+
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeModal()">Cancel</button>
+      <button class="primary" id="modalSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST NOTIFICATION CONTAINER
+     ============================================================ -->
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+<!-- Main Application Script -->
+<script src="script.js"></script>
+
+</body>
+</html>
